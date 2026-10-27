@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import confetti from "canvas-confetti";
-import { Heart, Stars, Gift, Music, Camera, X, ChevronLeft, ChevronRight, Play, Pause, Sparkles, Check } from "lucide-react";
+import { Heart, Stars, Gift, Music, Camera, X, ChevronLeft, ChevronRight, Play, Pause, Sparkles, Check, Disc, Volume2, VolumeX } from "lucide-react";
 import { Reveal, StarField, Petals } from "./shared";
 
 function fireCelebration() {
@@ -63,23 +63,43 @@ export default function FinalSection({ onSpecialSongStateChange }: Props) {
   const [showSlideshow, setShowSlideshow] = useState(false);
   const [showPromise, setShowPromise] = useState(false);
   const [showCoupons, setShowCoupons] = useState(false);
+  const [showSongModal, setShowSongModal] = useState(false);
+  const [activeSongType, setActiveSongType] = useState<"random" | "surprise" | null>(null);
+  const [isSongPlaying, setIsSongPlaying] = useState(false);
+
   const [redeemedCoupons, setRedeemedCoupons] = useState<number[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isPlayingAuto, setIsPlayingAuto] = useState(true);
-  const [isSongPlaying, setIsSongPlaying] = useState(false);
 
-  const specialSongRef = useRef<HTMLAudioElement | null>(null);
-  const specialSongSrc = "/Janmodire Ki Aar Debo _ Surer Akashe _ Alka Yagnik and Shakti Thakur _ Bengali Movie Songs [lAHKocEHZxw] (mp3cut.net).mp3";
+  const audioRef = useRef<HTMLAudioElement | null>(null);
 
-  const toggleSpecialSong = () => {
-    if (!specialSongRef.current) return;
-    if (isSongPlaying) {
-      specialSongRef.current.pause();
+  const songs = {
+    random: {
+      name: "Random Song",
+      subtitle: "A sweet romantic tune just for you ♡",
+      src: "/Janmodire Ki Aar Debo _ Surer Akashe _ Alka Yagnik and Shakti Thakur _ Bengali Movie Songs [lAHKocEHZxw] (mp3cut.net).mp3",
+    },
+    surprise: {
+      name: "Surprise Song 🎁",
+      subtitle: "A special message & melody from the heart ✨",
+      src: "/WhatsApp Audio 2026-10-27 at 23.41.04.mp3",
+    },
+  };
+
+  const playSong = (type: "random" | "surprise") => {
+    if (!audioRef.current) return;
+
+    if (activeSongType === type && isSongPlaying) {
+      // Pause
+      audioRef.current.pause();
       setIsSongPlaying(false);
       onSpecialSongStateChange?.(false);
     } else {
-      specialSongRef.current.currentTime = 0;
-      specialSongRef.current.play().then(() => {
+      // Switch or play
+      audioRef.current.src = songs[type].src;
+      audioRef.current.currentTime = 0;
+      audioRef.current.play().then(() => {
+        setActiveSongType(type);
         setIsSongPlaying(true);
         onSpecialSongStateChange?.(true);
         fireCelebration();
@@ -87,7 +107,16 @@ export default function FinalSection({ onSpecialSongStateChange }: Props) {
     }
   };
 
-  // Auto slideshow effect (only advances automatically for images)
+  const stopSong = () => {
+    if (audioRef.current) {
+      audioRef.current.pause();
+    }
+    setIsSongPlaying(false);
+    setActiveSongType(null);
+    onSpecialSongStateChange?.(false);
+  };
+
+  // Auto slideshow effect
   useEffect(() => {
     if (!showSlideshow || !isPlayingAuto) return;
     const currentItem = slideshowItems[currentIndex];
@@ -119,21 +148,21 @@ export default function FinalSection({ onSpecialSongStateChange }: Props) {
 
   return (
     <>
+      {/* Hidden Audio element for chosen song */}
+      <audio
+        ref={audioRef}
+        preload="auto"
+        onEnded={() => {
+          setIsSongPlaying(false);
+          setActiveSongType(null);
+          onSpecialSongStateChange?.(false);
+        }}
+      />
+
       {/* Final surprise */}
       <section id="surprise" className="relative overflow-hidden bg-gradient-to-b from-[#f9dce5] via-[#35151f] to-[#1a080f] px-5 py-28 text-center text-rose-50 sm:py-36">
         <StarField />
         <Petals count={20} />
-
-        {/* Audio element for special song */}
-        <audio
-          ref={specialSongRef}
-          src={specialSongSrc}
-          preload="auto"
-          onEnded={() => {
-            setIsSongPlaying(false);
-            onSpecialSongStateChange?.(false);
-          }}
-        />
 
         <Reveal>
           <div className="relative z-10">
@@ -178,9 +207,9 @@ export default function FinalSection({ onSpecialSongStateChange }: Props) {
                       You are my favourite person, Diya, and I&apos;m so glad you exist. ♡
                     </p>
                     <div className="mt-8 grid grid-cols-2 gap-3">
-                      {/* A song for you - Interactive Play/Pause Button */}
+                      {/* A song for you - Opens Options Modal */}
                       <button
-                        onClick={toggleSpecialSong}
+                        onClick={() => setShowSongModal(true)}
                         className={`flex items-center gap-2 rounded-xl border p-3 text-left transition shadow-sm cursor-pointer ${
                           isSongPlaying
                             ? "border-rose-300 bg-rose-500/40 shadow-rose-500/30"
@@ -192,7 +221,11 @@ export default function FinalSection({ onSpecialSongStateChange }: Props) {
                         </span>
                         <div className="flex flex-col text-left">
                           <span className="sans-font text-xs tracking-wide text-rose-100 font-medium">
-                            {isSongPlaying ? "Playing for you ♫" : "A song for you 🎵"}
+                            {isSongPlaying
+                              ? activeSongType === "surprise"
+                                ? "Surprise Song ♫"
+                                : "Random Song ♫"
+                              : "A song for you 🎵"}
                           </span>
                         </div>
                       </button>
@@ -232,6 +265,110 @@ export default function FinalSection({ onSpecialSongStateChange }: Props) {
           </div>
         </Reveal>
       </section>
+
+      {/* 0. Modal: Choose Song (Surprise Song vs Random Song) */}
+      <AnimatePresence>
+        {showSongModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 p-4 backdrop-blur-md"
+            onClick={() => setShowSongModal(false)}
+          >
+            <div
+              className="relative w-full max-w-sm overflow-hidden rounded-3xl border border-rose-300/30 bg-[#240e16] p-6 text-center shadow-2xl"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="mb-4 flex items-center justify-between border-b border-rose-200/20 pb-3">
+                <div className="flex items-center gap-2 text-rose-200">
+                  <Disc size={18} className="text-rose-400" />
+                  <span className="script-font text-2xl text-rose-200">Choose a Song ♡</span>
+                </div>
+                <button
+                  onClick={() => setShowSongModal(false)}
+                  className="rounded-full bg-white/10 p-1.5 text-rose-300 transition hover:bg-rose-500 hover:text-white"
+                >
+                  <X size={16} />
+                </button>
+              </div>
+
+              <p className="serif-font text-xs text-rose-200/70 mb-5 italic">
+                Pick a melody to play for you right now ✨
+              </p>
+
+              <div className="space-y-3">
+                {/* 1. Surprise Song Option */}
+                <motion.button
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  onClick={() => {
+                    playSong("surprise");
+                  }}
+                  className={`flex w-full items-center justify-between rounded-2xl border p-4 text-left transition cursor-pointer ${
+                    activeSongType === "surprise" && isSongPlaying
+                      ? "border-rose-400 bg-rose-500/30 shadow-md shadow-rose-500/20"
+                      : "border-rose-300/30 bg-white/5 hover:bg-white/10"
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <span className="text-2xl">🎁</span>
+                    <div>
+                      <h4 className="serif-font text-base font-semibold text-rose-100 flex items-center gap-1.5">
+                        Surprise Song
+                        {activeSongType === "surprise" && isSongPlaying && (
+                          <span className="text-[10px] bg-rose-500 text-white px-2 py-0.5 rounded-full uppercase">Playing</span>
+                        )}
+                      </h4>
+                    </div>
+                  </div>
+                  <div className="text-rose-300">
+                    {activeSongType === "surprise" && isSongPlaying ? <Pause size={18} /> : <Play size={18} />}
+                  </div>
+                </motion.button>
+
+                {/* 2. Random Song Option */}
+                <motion.button
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  onClick={() => {
+                    playSong("random");
+                  }}
+                  className={`flex w-full items-center justify-between rounded-2xl border p-4 text-left transition cursor-pointer ${
+                    activeSongType === "random" && isSongPlaying
+                      ? "border-rose-400 bg-rose-500/30 shadow-md shadow-rose-500/20"
+                      : "border-rose-300/30 bg-white/5 hover:bg-white/10"
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <span className="text-2xl">🎵</span>
+                    <div>
+                      <h4 className="serif-font text-base font-semibold text-rose-100 flex items-center gap-1.5">
+                        Random Song
+                        {activeSongType === "random" && isSongPlaying && (
+                          <span className="text-[10px] bg-rose-500 text-white px-2 py-0.5 rounded-full uppercase">Playing</span>
+                        )}
+                      </h4>
+                    </div>
+                  </div>
+                  <div className="text-rose-300">
+                    {activeSongType === "random" && isSongPlaying ? <Pause size={18} /> : <Play size={18} />}
+                  </div>
+                </motion.button>
+              </div>
+
+              {isSongPlaying && (
+                <button
+                  onClick={stopSong}
+                  className="mt-5 text-xs text-rose-300/70 hover:text-rose-200 transition underline underline-offset-4"
+                >
+                  Pause Song
+                </button>
+              )}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* 1. Modal: A Little Promise */}
       <AnimatePresence>

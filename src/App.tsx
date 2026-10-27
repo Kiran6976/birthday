@@ -4,11 +4,14 @@ import { Volume2, VolumeX } from "lucide-react";
 
 import OpeningScreen  from "./components/OpeningScreen";
 import HeroSection    from "./components/HeroSection";
+import LoveCounterSection from "./components/LoveCounterSection";
 import MemoriesSection from "./components/MemoriesSection";
 import ReasonsSection  from "./components/ReasonsSection";
 import LetterSection   from "./components/LetterSection";
 import CakeSection     from "./components/CakeSection";
+import ScratchCardSection from "./components/ScratchCardSection";
 import FinalSection    from "./components/FinalSection";
+import FloatingLoveButton from "./components/FloatingLoveButton";
 import "./index.css";
 
 export default function App() {
@@ -128,11 +131,14 @@ export default function App() {
           </motion.nav>
 
           <HeroSection />
+          <LoveCounterSection />
           <MemoriesSection />
           <ReasonsSection />
           <LetterSection onLetterStateChange={handleLetterStateChange} />
           <CakeSection />
+          <ScratchCardSection />
           <FinalSection onSpecialSongStateChange={handleSpecialSongStateChange} />
+          <FloatingLoveButton />
         </>
       )}
     </main>
